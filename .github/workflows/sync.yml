@@ -1,0 +1,36 @@
+name: sync
+on:
+  # Hourly: Anchore publishes once a day (06:53 to 07:47 UTC over 98 runs to
+  # 2026-10-29), and sync.sh exits early when the release already exists.
+  schedule:
+    - cron: "55 * * * *"
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: Releases to keep
+        default: "7"
+permissions:
+  contents: write
+  actions: write # the enable call below
+concurrency:
+  group: sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # "In a public repository, scheduled workflows are automatically disabled
+      # when no repository activity has occurred in 60 days."
+      # https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows
+      # Enabling the workflow again keeps it on without a commit. The call
+      # needs actions: write and is a no-op on an enabled workflow.
+      - name: Keep the schedule enabled
+        run: gh api -X PUT "repos/$GITHUB_REPOSITORY/actions/workflows/sync.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: ./sync.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_RELEASES: ${{ inputs.keep || '7' }}
