@@ -71,9 +71,9 @@ Check without publishing: `DRY_RUN=1 ./sync.sh`.
 - A run skips when tag `v6-<built>` exists. A draft left by a failed upload has no tag, so the next run retries it.
 - The archive is checked against the listing `checksum` before upload. After upload, GitHub's asset
   digests are compared with the local files. A mismatch deletes the release and fails the run.
-- GitHub replaces `:` in asset names with `.`. The upstream `latest.json` therefore names a file the
-  release does not have. `listing.json` is the same listing with `path` set to the uploaded asset name,
-  and grype resolves `path` relative to the listing URL.
+- GitHub replaces `:` in asset names with `.`, so the upstream listing names a file the release does
+  not have. `latest.json` and `listing.json` are the upstream listing with `path` set to the uploaded
+  asset name. `checksum` and `built` stay upstream's. grype resolves `path` relative to the listing URL.
 - Releases beyond `KEEP_RELEASES` are deleted with their tags.
 
 ## Out of scope
@@ -85,7 +85,7 @@ Check without publishing: `DRY_RUN=1 ./sync.sh`.
 ## Expected result
 
 A release `v6-<YYYYMMDDTHHMMSSZ>`, marked latest, with four assets: the archive
-`vulnerability-db_v6.<x>.<y>_<built>_<n>.tar.zst`, `latest.json` (upstream, unchanged), `listing.json`
+`vulnerability-db_v6.<x>.<y>_<built>_<n>.tar.zst`, `latest.json`, `listing.json` (the same file)
 and `SHA256SUMS`. Verify a client sees it:
 
 ```sh

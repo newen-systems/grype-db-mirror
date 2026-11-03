@@ -2,8 +2,8 @@
 # Mirror the latest grype v6 DB from Anchore into a GitHub release.
 #
 # One release per distinct upstream DB, tagged v6-<built>. Assets: the archive,
-# upstream latest.json (unchanged), SHA256SUMS, and listing.json (latest.json
-# with path set to the archive's asset name, for GRYPE_DB_UPDATE_URL). Keeps the newest
+# SHA256SUMS, and latest.json and listing.json (both upstream latest.json with
+# path set to the archive's asset name, for GRYPE_DB_UPDATE_URL). Keeps the newest
 # KEEP_RELEASES releases. DRY_RUN=1 stops after download and verify.
 set -euo pipefail
 
@@ -44,10 +44,13 @@ echo "${sum#sha256:}  $path" | sha256sum -c -
 # GitHub renames ':' in asset names to '.', so upload under that name up front.
 asset="${path//:/.}"
 [ "$asset" = "$path" ] || mv "$path" "$asset"
+# grype resolves path relative to the listing URL, so point it at the asset.
+# latest.json and listing.json are the same file: listing.json for clients
+# already configured with it. checksum and built stay upstream's.
+jq --arg p "$asset" '.path = $p' latest.json > listing.json
+cp listing.json latest.json
 sha256sum "$asset" latest.json > SHA256SUMS
 cat SHA256SUMS
-# grype resolves path relative to the listing URL, so point it at the asset.
-jq --arg p "$asset" '.path = $p' latest.json > listing.json
 
 [ "${DRY_RUN:-0}" = 1 ] && { echo "DRY_RUN: verified, not publishing"; exit 0; }
 
